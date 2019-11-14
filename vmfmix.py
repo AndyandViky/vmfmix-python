@@ -108,11 +108,16 @@ class VMFMixture:
         self.kappa = kappa * self.D
         self.pi = pi / np.sum(pi)
 
-    def predict(self):
-        pass
+    def predict(self, x):
 
-    def fit_predict(self):
-        pass
+        yita_c = np.exp(np.log(self.pi) + self.pdf(x))
+
+        return np.argmax(yita_c, axis=1)
+
+    def fit_predict(self, x):
+
+        self.fit(x)
+        return self.predict(x)
 
     def fit(self, x):
 
@@ -143,7 +148,7 @@ class VMFMixture:
 
         D = self.D
         N = self.N
-        log_normalize = np.log(pi) + (D / 2 - 1) * np.log(kappa) - (D / 2) * np.log(2 * pi) - self.log_besseli(D/2 - 1, kappa)
+        log_normalize = np.log(pi) + (D / 2 - 1) * np.log(kappa) - (D / 2) * np.log(2 * np.pi) - self.log_besseli(D/2 - 1, kappa)
         R = x.dot(mu.T * (np.ones((D, 1)).dot(kappa[np.newaxis, :])))
         R = R + log_normalize
         T = logsumexp(R, 1)[:, np.newaxis]
@@ -177,8 +182,12 @@ class VMFMixture:
 
         return approx
 
-    def pdf(self):
-        pass
+    def pdf(self, x):
+
+        D = self.D
+        pdf = (D / 2 - 1) * np.log(self.kappa) - (D / 2) * np.log(2 * np.pi) - self.log_besseli(
+            D / 2 - 1, self.kappa) + x.dot(self.mu.T * self.kappa[np.newaxis, :])
+        return pdf
 
 
 def randsample(n, k):
@@ -190,6 +199,8 @@ def randsample(n, k):
     return h
 
 
-test = np.array(scio.loadmat('./demo_data.mat')['data'])
-vm = VMFMixture()
-vm.fit(test)
+if __name__ == "__main__":
+    test = np.array(scio.loadmat('./demo_data.mat')['data'])
+    vm = VMFMixture()
+    vm.fit(test)
+    pred = vm.predict(test)
